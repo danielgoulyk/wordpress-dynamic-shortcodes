@@ -2,13 +2,14 @@
 /**
  * Plugin Name: Dynamic Shortcodes (No ACF Required)
  * Description: Dynamically register shortcodes from custom field values on a selected page. Fully standalone—no ACF needed.
- * Version: 3.0
+ * Version: 2.0
  * Author: Daniel Goulyk (danielgoulyk.com)
  */
 
 function ds_register_settings() {
     register_setting('ds_settings_group', 'ds_page_id');
     register_setting('ds_settings_group', 'ds_shortcode_custom');
+    register_setting('ds_settings_group', 'ds_enable_prefix');
 }
 add_action('admin_init', 'ds_register_settings');
 
@@ -24,6 +25,9 @@ function ds_save_field_values() {
         foreach ($_POST['ds_field_values'] as $field_key => $field_value) {
             update_post_meta($page_id, $field_key, sanitize_text_field($field_value));
         }
+        if (isset($_POST['ds_shortcode_custom'])) {
+            update_option('ds_shortcode_custom', array_map('sanitize_text_field', $_POST['ds_shortcode_custom']));
+        }
     }
 }
 add_action('admin_init', 'ds_save_field_values');
@@ -31,53 +35,75 @@ add_action('admin_init', 'ds_save_field_values');
 function ds_settings_page() {
     $selected_page = isset($_GET['ds_page']) ? intval($_GET['ds_page']) : get_option('ds_page_id');
     $shortcode_map = get_option('ds_shortcode_custom', []);
+    $prefix_enabled = get_option('ds_enable_prefix', true);
 
     echo '<div class="wrap">';
     echo '<h1>Dynamic Shortcodes</h1>';
-    echo '<p>This plugin allows you to dynamically create shortcodes using values from custom fields on a specific page. Select the page, assign shortcode names to each custom field, and display those values anywhere using shortcodes.</p>';
+    echo '<p>This plugin allows you to dynamically create shortcodes using values from custom fields on a specific page.</p>';
+
+    if (isset($_GET['ds_message'])) {
+        $message = sanitize_text_field($_GET['ds_message']);
+        if ($message === 'added') {
+            echo '<div class="notice notice-success is-dismissible"><p>New field and shortcode added successfully.</p></div>';
+        } elseif ($message === 'duplicate') {
+            echo '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> Field name or shortcode already exists.</p></div>';
+        } elseif ($message === 'deleted') {
+            echo '<div class="notice notice-warning is-dismissible"><p>Field and shortcode deleted.</p></div>';
+        }
+    }
 
     echo '<form method="get">';
     echo '<input type="hidden" name="page" value="ds-settings" />';
     echo '<label for="ds_page">Select Source Page:</label><br>';
     echo '<select name="ds_page" id="ds_page" onchange="this.form.submit()">';
     echo '<option value="">-- Select a Page --</option>';
-
     foreach (get_pages() as $page) {
         $selected = ($selected_page == $page->ID) ? 'selected' : '';
         echo "<option value='{$page->ID}' {$selected}>{$page->post_title}</option>";
     }
-
     echo '</select>';
-    echo '<p class="description">Values from this page will be used to populate shortcodes across your site.</p>';
+    echo '</form>';
+
+    echo '<form method="post" action="options.php">';
+    settings_fields('ds_settings_group');
+    $checked = $prefix_enabled ? 'checked' : '';
+    echo '<h2>Plugin Settings</h2>';
+    echo '<label><input type="checkbox" name="ds_enable_prefix" value="1" ' . $checked . '> Enable <code>ds_</code> prefix for shortcodes</label>';
+    submit_button('Save Settings');
     echo '</form>';
 
     if ($selected_page) {
         update_option('ds_page_id', $selected_page);
         $meta_raw = get_post_meta($selected_page);
         $fields = [];
-
         foreach ($meta_raw as $key => $values) {
-            if (strpos($key, '_') === 0) continue; // skip internal WP meta keys
+            if (strpos($key, '_') === 0) continue;
             $fields[$key] = maybe_unserialize($values[0]);
         }
 
+        $filter = isset($_GET['ds_filter']) ? strtolower($_GET['ds_filter']) : '';
+        if ($filter) {
+            $fields = array_filter($fields, function ($key) use ($filter) {
+                return strpos(strtolower($key), $filter) !== false;
+            }, ARRAY_FILTER_USE_KEY);
+        }
+
+        echo '<form method="get" style="margin-bottom: 20px;">';
+        echo '<input type="hidden" name="page" value="ds-settings" />';
+        echo '<input type="hidden" name="ds_page" value="' . esc_attr($selected_page) . '" />';
+        echo '<input type="search" name="ds_filter" placeholder="Search fields..." value="' . esc_attr($filter) . '" />';
+        echo '<button class="button">Filter</button>';
+        echo '</form>';
+
         if (empty($fields)) {
-            echo '<p><em>No custom fields found for this page. Add some via the "Custom Fields" box when editing the page.</em></p>';
+            echo '<p><em>No custom fields found for this page.</em></p>';
         } else {
             echo '<form method="post" action="options.php">';
             settings_fields('ds_settings_group');
             echo '<input type="hidden" name="ds_page_id" value="' . esc_attr($selected_page) . '">';
-
             echo '<h2>Shortcode Mapping</h2>';
             echo '<table class="widefat">';
-            echo '<thead>
-                <tr>
-                    <th>Field Name<br><small>The name of your custom field.</small></th>
-                    <th>Shortcode Name<br><small>What users will enter between brackets.</small></th>
-                    <th>Copy<br><small>Copy shortcode name to clipboard.</small></th>
-                    <th>Value<br><small>Current value (editable).</small></th>
-                </tr>
-            </thead><tbody>';
+            echo '<thead><tr><th>Field Name</th><th>Shortcode</th><th>Copy</th><th>Value</th><th>Delete</th></tr></thead><tbody>';
 
             foreach ($fields as $field_name => $value) {
                 $shortcode = $shortcode_map[$field_name] ?? '';
@@ -91,15 +117,32 @@ function ds_settings_page() {
                     <td><input type='text' name='ds_shortcode_custom[{$field_name}]' value='{$shortcode_escaped}' /></td>
                     <td><button type='button' class='button copy-button' data-copy='{$copy_text}' {$copy_disabled}>Copy</button></td>
                     <td><input type='text' name='ds_field_values[{$field_name}]' value='{$value_escaped}' /></td>
+                    <td>
+                        <form method='post' action='" . esc_url(admin_url('admin-post.php')) . "' onsubmit='return confirm("Are you sure?")'>
+                            <input type='hidden' name='action' value='ds_delete_field'>
+                            <input type='hidden' name='field_name' value='{$field_name}'>
+                            <input type='hidden' name='page_id' value='{$selected_page}'>
+                            <input type='submit' class='button button-secondary' value='Delete'>
+                        </form>
+                    </td>
                 </tr>";
             }
 
             echo '</tbody></table>';
             submit_button('Save Changes');
-
-            echo '<div class="notice notice-warning inline" style="margin-top: 20px;"><p><strong>Note:</strong> If you’re using a caching plugin, clear your cache to see updates on the front end.</p></div>';
             echo '</form>';
         }
+
+        echo '<hr><h2>Add a New Custom Field</h2>';
+        echo '<form method="post">';
+        echo '<input type="hidden" name="ds_add_field_page_id" value="' . esc_attr($selected_page) . '">';
+        echo '<table class="form-table">';
+        echo '<tr><th>Field Name</th><td><input name="ds_new_field_key" type="text" required /></td></tr>';
+        echo '<tr><th>Field Value</th><td><input name="ds_new_field_value" type="text" required /></td></tr>';
+        echo '<tr><th>Shortcode</th><td><input name="ds_new_field_shortcode" type="text" required /></td></tr>';
+        echo '</table>';
+        echo '<p><input type="submit" name="ds_add_new_field" class="button button-primary" value="Add Field & Shortcode"></p>';
+        echo '</form>';
     }
 
     echo '</div>';
@@ -124,6 +167,53 @@ function ds_settings_page() {
 
 add_action('admin_menu', function () {
     add_options_page('Dynamic Shortcodes', 'Shortcodes', 'manage_options', 'ds-settings', 'ds_settings_page');
+});
+
+function ds_handle_new_field_submission() {
+    if (!current_user_can('manage_options')) return;
+    if (!isset($_POST['ds_add_new_field'])) return;
+
+    $page_id   = intval($_POST['ds_add_field_page_id']);
+    $key       = sanitize_key($_POST['ds_new_field_key']);
+    $value     = sanitize_text_field($_POST['ds_new_field_value']);
+    $shortcode = sanitize_key($_POST['ds_new_field_shortcode']);
+
+    if (!$page_id || !$key || !$shortcode) return;
+
+    if (get_option('ds_enable_prefix', true)) {
+        $shortcode = 'ds_' . $shortcode;
+    }
+
+    $existing_fields = get_post_meta($page_id);
+    $existing_map = get_option('ds_shortcode_custom', []);
+
+    if (array_key_exists($key, $existing_fields) || in_array($shortcode, $existing_map)) {
+        wp_redirect(add_query_arg(['page' => 'ds-settings', 'ds_page' => $page_id, 'ds_message' => 'duplicate'], admin_url('options-general.php')));
+        exit;
+    }
+
+    update_post_meta($page_id, $key, $value);
+    $existing_map[$key] = $shortcode;
+    update_option('ds_shortcode_custom', $existing_map);
+
+    wp_redirect(add_query_arg(['page' => 'ds-settings', 'ds_page' => $page_id, 'ds_message' => 'added'], admin_url('options-general.php')));
+    exit;
+}
+add_action('admin_init', 'ds_handle_new_field_submission');
+
+add_action('admin_post_ds_delete_field', function () {
+    if (!current_user_can('manage_options')) return;
+
+    $field = sanitize_key($_POST['field_name']);
+    $page_id = intval($_POST['page_id']);
+    $map = get_option('ds_shortcode_custom', []);
+
+    delete_post_meta($page_id, $field);
+    unset($map[$field]);
+    update_option('ds_shortcode_custom', $map);
+
+    wp_redirect(add_query_arg(['page' => 'ds-settings', 'ds_page' => $page_id, 'ds_message' => 'deleted'], admin_url('options-general.php')));
+    exit;
 });
 
 function ds_register_dynamic_shortcodes() {
