@@ -22,11 +22,21 @@ function ds_save_field_values() {
         is_array($_POST['ds_field_values'])
     ) {
         $page_id = intval($_POST['ds_page_id']);
+
         foreach ($_POST['ds_field_values'] as $field_key => $field_value) {
             update_post_meta($page_id, $field_key, sanitize_text_field($field_value));
         }
+
         if (isset($_POST['ds_shortcode_custom'])) {
             update_option('ds_shortcode_custom', array_map('sanitize_text_field', $_POST['ds_shortcode_custom']));
+        }
+
+        if (isset($_POST['ds_delete_field']) && $_POST['ds_delete_field']) {
+            $field_to_delete = sanitize_key($_POST['ds_delete_field']);
+            delete_post_meta($page_id, $field_to_delete);
+            $shortcode_map = get_option('ds_shortcode_custom', []);
+            unset($shortcode_map[$field_to_delete]);
+            update_option('ds_shortcode_custom', $shortcode_map);
         }
     }
 }
@@ -88,53 +98,35 @@ function ds_settings_page() {
             }, ARRAY_FILTER_USE_KEY);
         }
 
-        echo '<form method="get" style="margin-bottom: 20px;">';
-        echo '<input type="hidden" name="page" value="ds-settings" />';
-        echo '<input type="hidden" name="ds_page" value="' . esc_attr($selected_page) . '" />';
-        echo '<input type="search" name="ds_filter" placeholder="Search fields..." value="' . esc_attr($filter) . '" />';
-        echo '<button class="button">Filter</button>';
-        echo '</form>';
+        echo '<form method="post">';
+        settings_fields('ds_settings_group');
+        echo '<input type="hidden" name="ds_page_id" value="' . esc_attr($selected_page) . '">';
+        echo '<h2>Shortcode Mapping</h2>';
+        echo '<table class="widefat">';
+        echo '<thead><tr><th>Field Name</th><th>Shortcode</th><th>Copy</th><th>Value</th><th>Delete</th></tr></thead><tbody>';
 
-        if (empty($fields)) {
-            echo '<p><em>No custom fields found for this page.</em></p>';
-        } else {
-            echo '<form method="post" action="options.php">';
-            settings_fields('ds_settings_group');
-            echo '<input type="hidden" name="ds_page_id" value="' . esc_attr($selected_page) . '">';
-            echo '<h2>Shortcode Mapping</h2>';
-            echo '<table class="widefat">';
-            echo '<thead><tr><th>Field Name</th><th>Shortcode</th><th>Copy</th><th>Value</th><th>Delete</th></tr></thead><tbody>';
+        foreach ($fields as $field_name => $value) {
+            $shortcode = $shortcode_map[$field_name] ?? '';
+            $copy_text = $shortcode ? "[{$shortcode}]" : '';
+            $copy_disabled = $shortcode ? '' : 'disabled style="opacity:0.5;"';
+            $value_escaped = esc_attr($value);
+            $shortcode_escaped = esc_attr($shortcode);
 
-            foreach ($fields as $field_name => $value) {
-                $shortcode = $shortcode_map[$field_name] ?? '';
-                $copy_text = $shortcode ? "[{$shortcode}]" : '';
-                $copy_disabled = $shortcode ? '' : 'disabled style="opacity:0.5;"';
-                $value_escaped = esc_attr($value);
-                $shortcode_escaped = esc_attr($shortcode);
-
-                echo "<tr>
-                    <td><code>{$field_name}</code></td>
-                    <td><input type='text' name='ds_shortcode_custom[{$field_name}]' value='{$shortcode_escaped}' /></td>
-                    <td><button type='button' class='button copy-button' data-copy='{$copy_text}' {$copy_disabled}>Copy</button></td>
-                    <td><input type='text' name='ds_field_values[{$field_name}]' value='{$value_escaped}' /></td>
-                    <td>
-                        <form method='post' action='" . esc_url(admin_url('admin-post.php')) . "' onsubmit='return confirm("Are you sure?")'>
-                            <input type='hidden' name='action' value='ds_delete_field'>
-                            <input type='hidden' name='field_name' value='{$field_name}'>
-                            <input type='hidden' name='page_id' value='{$selected_page}'>
-                            <input type='submit' class='button button-secondary' value='Delete'>
-                        </form>
-                    </td>
-                </tr>";
-            }
-
-            echo '</tbody></table>';
-            submit_button('Save Changes');
-            echo '</form>';
+            echo "<tr>
+                <td><code>{$field_name}</code></td>
+                <td><input type='text' name='ds_shortcode_custom[{$field_name}]' value='{$shortcode_escaped}' /></td>
+                <td><button type='button' class='button copy-button' data-copy='{$copy_text}' {$copy_disabled}>Copy</button></td>
+                <td><input type='text' name='ds_field_values[{$field_name}]' value='{$value_escaped}' /></td>
+                <td>
+                    <button type='submit' name='ds_delete_field' value='{$field_name}' class='button button-secondary' onclick='return confirm("Are you sure?")'>Delete</button>
+                </td>
+            </tr>";
         }
 
+        echo '</tbody></table>';
+        submit_button('Save Changes');
+
         echo '<hr><h2>Add a New Custom Field</h2>';
-        echo '<form method="post">';
         echo '<input type="hidden" name="ds_add_field_page_id" value="' . esc_attr($selected_page) . '">';
         echo '<table class="form-table">';
         echo '<tr><th>Field Name</th><td><input name="ds_new_field_key" type="text" required /></td></tr>';
@@ -200,21 +192,6 @@ function ds_handle_new_field_submission() {
     exit;
 }
 add_action('admin_init', 'ds_handle_new_field_submission');
-
-add_action('admin_post_ds_delete_field', function () {
-    if (!current_user_can('manage_options')) return;
-
-    $field = sanitize_key($_POST['field_name']);
-    $page_id = intval($_POST['page_id']);
-    $map = get_option('ds_shortcode_custom', []);
-
-    delete_post_meta($page_id, $field);
-    unset($map[$field]);
-    update_option('ds_shortcode_custom', $map);
-
-    wp_redirect(add_query_arg(['page' => 'ds-settings', 'ds_page' => $page_id, 'ds_message' => 'deleted'], admin_url('options-general.php')));
-    exit;
-});
 
 function ds_register_dynamic_shortcodes() {
     $page_id = get_option('ds_page_id');
