@@ -73,7 +73,7 @@ function ds_settings_page() {
     settings_fields('ds_settings_group');
     $checked = $prefix_enabled ? 'checked' : '';
     echo '<h2>Plugin Settings</h2>';
-    echo '<label><input type="checkbox" name="ds_enable_prefix" value="1" ' . $checked . '> Enable <code>ds_</code> prefix for shortcodes</label>';
+    echo '<label><input type="checkbox" name="ds_enable_prefix" value="1" ' . $checked . '> Enable <code>ds_</code> prefix for shortcodes (warning: updating this will erase all existing shortcodes and mappings).</label>';
     submit_button('Save Settings');
     echo '</form>';
 

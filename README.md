@@ -31,9 +31,16 @@ No ACF or technical knowledge required — built entirely on native WordPress fu
 
 ---
 
-## Version 2.6.1 Changelog
+## Version 2.6.2 Changelog
 
 ### Final Stable Release Improvements
+- Added a warning besides the "ds_" checkbox to notify user that all shortcodes will be cleared
+
+---
+
+## Version 2.6.1 Changelog
+
+### Release Improvements
 - Resolved bug where updating existing shortcode mappings was blocked
 - Polished admin UI and styling for a more refined experience
 - Fully standalone plugin menu renamed to **Dynamic Values**
