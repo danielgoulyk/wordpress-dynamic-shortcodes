@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Dynamic Shortcodes (No ACF Required)
  * Description: Dynamically register shortcodes from custom field values on a selected page. Fully standalone—no ACF needed.
- * Version: 2.0
+ * Version: 2.1
  * Author: Daniel Goulyk (danielgoulyk.com)
  */
 
@@ -29,14 +29,6 @@ function ds_save_field_values() {
 
         if (isset($_POST['ds_shortcode_custom'])) {
             update_option('ds_shortcode_custom', array_map('sanitize_text_field', $_POST['ds_shortcode_custom']));
-        }
-
-        if (isset($_POST['ds_delete_field']) && $_POST['ds_delete_field']) {
-            $field_to_delete = sanitize_key($_POST['ds_delete_field']);
-            delete_post_meta($page_id, $field_to_delete);
-            $shortcode_map = get_option('ds_shortcode_custom', []);
-            unset($shortcode_map[$field_to_delete]);
-            update_option('ds_shortcode_custom', $shortcode_map);
         }
     }
 }
@@ -118,7 +110,12 @@ function ds_settings_page() {
                 <td><button type='button' class='button copy-button' data-copy='{$copy_text}' {$copy_disabled}>Copy</button></td>
                 <td><input type='text' name='ds_field_values[{$field_name}]' value='{$value_escaped}' /></td>
                 <td>
-                    <button type='submit' name='ds_delete_field' value='{$field_name}' class='button button-secondary' onclick="return confirm('Are you sure?')">Delete</button>
+                    <form method='post' action='" . esc_url(admin_url('admin-post.php')) . "' onsubmit='return confirm("Are you sure?")'>
+                        <input type='hidden' name='action' value='ds_delete_field'>
+                        <input type='hidden' name='field_name' value='{$field_name}'>
+                        <input type='hidden' name='page_id' value='{$selected_page}'>
+                        <input type='submit' class='button button-secondary' value='Delete'>
+                    </form>
                 </td>
             </tr>";
         }
@@ -192,6 +189,21 @@ function ds_handle_new_field_submission() {
     exit;
 }
 add_action('admin_init', 'ds_handle_new_field_submission');
+
+add_action('admin_post_ds_delete_field', function () {
+    if (!current_user_can('manage_options')) return;
+
+    $field = sanitize_key($_POST['field_name']);
+    $page_id = intval($_POST['page_id']);
+    $map = get_option('ds_shortcode_custom', []);
+
+    delete_post_meta($page_id, $field);
+    unset($map[$field]);
+    update_option('ds_shortcode_custom', $map);
+
+    wp_redirect(add_query_arg(['page' => 'ds-settings', 'ds_page' => $page_id, 'ds_message' => 'deleted'], admin_url('options-general.php')));
+    exit;
+});
 
 function ds_register_dynamic_shortcodes() {
     $page_id = get_option('ds_page_id');
