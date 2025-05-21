@@ -1,11 +1,11 @@
 # Dynamic Shortcodes (No ACF Required)
 ## Create easy WordPress shortcodes without code — just set a value once, and it updates across your whole site automatically.
 
-**Contributors:** Daniel Goulyk  
+**Contributors:** Daniel Goulyk (danielgoulyk.com)  
 **Tags:** shortcodes, custom fields, dynamic content, admin UI, WordPress plugin  
 **Requires at least:** 5.5  
-**Tested up to:** 6.5  
-**Stable tag:** 2.0  
+**Tested up to:** 6.8.1  
+**Stable tag:** 2.6  
 **License:** GPLv2 or later  
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,28 +24,47 @@ This plugin lets you:
 - Use those shortcodes anywhere on your site (e.g., `[price_box]`)
 - Create, edit, and delete custom fields and shortcodes
 - Enable or disable auto-prefixing shortcodes (e.g., `ds_price_box`)
+- Search and filter field mappings easily
+- Group system/meta fields separately from user-defined fields
 
 No ACF or technical knowledge required — built entirely on native WordPress functionality.
 
 ---
 
-## Version 2.0 Changelog
+## Version 2.6 Changelog
 
-### New Features
-- **Add New Custom Fields**  
-  Create new field/value/shortcode mappings directly from the plugin UI.
+### UI & UX Improvements
+- Moved plugin from **Settings → Shortcodes** to a dedicated top-level menu called **Dynamic Values**
+- Renamed plugin heading and admin menu for clarity
+- Updated plugin description for clarity and usability
+- Added contextual help text under each table heading to guide users
+- Display a styled notice when users need to clear their cache
+- Redesigned button styles and form structure for clarity
+- Improved validation UX when adding new fields
+- Improved distinction between system and user-defined fields
+- Made the interface more intuitive and accessible
 
-- **Delete Existing Fields**  
-  One-click removal of custom fields and their shortcodes.
+---
 
-- **Toggle Shortcode Prefixing**  
-  Choose whether to automatically prefix shortcodes with `ds_`.
+## Version 2.0–2.5 Changes (Functional)
 
-- **Search & Filter Interface**  
-  Quickly search and filter through large lists of fields.
+- **New: Add Custom Fields via Admin UI**  
+  Create new field/shortcode mappings directly in the backend.
 
-- **User Feedback Messages**  
-  Friendly success and error messages when adding or deleting fields.
+- **New: Delete Fields**  
+  Instantly remove unwanted fields and shortcodes with one click.
+
+- **New: Toggle Prefixes**  
+  Choose whether shortcodes are prefixed with `ds_` automatically.
+
+- **New: Real-Time Search Bar**  
+  Filter large field lists on the fly.
+
+- **New: Admin Notices**  
+  See clear success, error, and warning messages.
+
+- **Bug Fixes:**  
+  Fixed an issue where saving shortcode mappings was blocked by empty fields in the "Add New Field" section.
 
 ---
 
@@ -63,12 +82,14 @@ No ACF or technical knowledge required — built entirely on native WordPress fu
 
 ## How to Use
 
-1. Go to **Settings → Shortcodes**
+1. Go to **Dynamic Values** in the WordPress sidebar
 2. Select a page with custom fields
 3. Map each field to a shortcode
-4. Use that shortcode like `[ds_custom_field]` anywhere on your site
+4. Use the shortcode like `[ds_custom_field]` anywhere on your site
 
-Need to create a new field? Use the **Add New Field** form at the bottom of the page.
+Need to add a new field? Use the **Add a New Custom Field** section at the bottom.
+
+> Note: If you're using a caching plugin (e.g. LiteSpeed, WP Rocket, W3 Total Cache, etc.), make sure to **clear the cache** after saving changes to see updates on the front end.
 
 ---
 
