@@ -1,4 +1,4 @@
-# Dynamic Values (No ACF Required)
+# Dynamic Values (No ACF Required) - Version 2.6.1
 ## Create easy WordPress shortcodes without code — just set a value once, and it updates across your whole site automatically.
 
 **Contributors:** Daniel Goulyk (danielgoulyk.com)  
