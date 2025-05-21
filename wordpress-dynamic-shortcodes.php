@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Dynamic Values
  * Description: This plugin allows you to dynamically create shortcodes using values from custom fields on a specific page. Create easy WordPress shortcodes without code — just set a value once, and it updates across your whole site automatically.
- * Version: 2.6.1
+ * Version: 2.6.2
  * Author: Daniel Goulyk (danielgoulyk.com)
  * Requires at least: 5.5
  * Requires PHP: 7.4
