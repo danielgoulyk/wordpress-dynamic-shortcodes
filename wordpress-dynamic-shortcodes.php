@@ -118,7 +118,7 @@ function ds_settings_page() {
                 <td><button type='button' class='button copy-button' data-copy='{$copy_text}' {$copy_disabled}>Copy</button></td>
                 <td><input type='text' name='ds_field_values[{$field_name}]' value='{$value_escaped}' /></td>
                 <td>
-                    <button type='submit' name='ds_delete_field' value='{$field_name}' class='button button-secondary' onclick='return confirm("Are you sure?")'>Delete</button>
+                    <button type='submit' name='ds_delete_field' value='{$field_name}' class='button button-secondary' onclick="return confirm('Are you sure?')">Delete</button>
                 </td>
             </tr>";
         }
