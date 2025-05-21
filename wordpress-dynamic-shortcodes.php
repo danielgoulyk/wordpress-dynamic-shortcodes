@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Dynamic Shortcodes (No ACF Required)
  * Description: Dynamically register shortcodes from custom field values on a selected page. Fully standalone—no ACF needed.
- * Version: 2.1
+ * Version: 2.2
  * Author: Daniel Goulyk (danielgoulyk.com)
  */
 
@@ -22,7 +22,6 @@ function ds_save_field_values() {
         is_array($_POST['ds_field_values'])
     ) {
         $page_id = intval($_POST['ds_page_id']);
-
         foreach ($_POST['ds_field_values'] as $field_key => $field_value) {
             update_post_meta($page_id, $field_key, sanitize_text_field($field_value));
         }
@@ -110,7 +109,7 @@ function ds_settings_page() {
                 <td><button type='button' class='button copy-button' data-copy='{$copy_text}' {$copy_disabled}>Copy</button></td>
                 <td><input type='text' name='ds_field_values[{$field_name}]' value='{$value_escaped}' /></td>
                 <td>
-                    <form method='post' action='" . esc_url(admin_url('admin-post.php')) . "' onsubmit='return confirm("Are you sure?")'>
+                    <form method='post' action='" . esc_url(admin_url('admin-post.php')) . "' onsubmit=\"return confirm('Are you sure?')\">
                         <input type='hidden' name='action' value='ds_delete_field'>
                         <input type='hidden' name='field_name' value='{$field_name}'>
                         <input type='hidden' name='page_id' value='{$selected_page}'>
