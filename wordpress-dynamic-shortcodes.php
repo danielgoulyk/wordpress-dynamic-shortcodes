@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Dynamic Shortcodes (No ACF Required)
  * Description: Dynamically register shortcodes from custom field values on a selected page. Fully standalone—no ACF needed.
- * Version: 2.3
+ * Version: 2.4
  * Author: Daniel Goulyk (danielgoulyk.com)
  */
 
@@ -39,6 +39,11 @@ function ds_settings_page() {
     $prefix_enabled = get_option('ds_enable_prefix', true);
 
     echo '<div class="wrap">';
+    echo '<style>
+        .ds-search-bar { margin: 1em 0; }
+        .ds-section-header { background: #f9f9f9; padding: 0.5em; font-weight: bold; border-top: 2px solid #ccc; }
+        .ds-highlight-user td { background-color: #fffff4; }
+    </style>';
     echo '<h1>Dynamic Shortcodes</h1>';
     echo '<p>This plugin allows you to dynamically create shortcodes using values from custom fields on a specific page.</p>';
 
@@ -82,27 +87,22 @@ function ds_settings_page() {
             $fields[$key] = maybe_unserialize($values[0]);
         }
 
-        $filter = isset($_GET['ds_filter']) ? strtolower($_GET['ds_filter']) : '';
-        if ($filter) {
-            $fields = array_filter($fields, function ($key) use ($filter) {
-                return strpos(strtolower($key), $filter) !== false;
-            }, ARRAY_FILTER_USE_KEY);
-        }
-
-        echo '<form method="post">';
+        echo '<form method="post" id="ds-form">';
         settings_fields('ds_settings_group');
         echo '<input type="hidden" name="ds_page_id" value="' . esc_attr($selected_page) . '">';
         echo '<h2>Shortcode Mapping</h2>';
         echo '<p>This section displays all custom fields detected on the selected page. You can assign a shortcode to any of these fields and use it anywhere across your website.</p>';
 
-        echo '<table class="widefat">';
+        echo '<input type="text" class="ds-search-bar" placeholder="Search fields..." onkeyup="dsFilterFields(this.value)" />';
+
+        echo '<table class="widefat" id="ds-field-table">';
         echo '<thead>
             <tr>
-                <th>Field Name<br><small>This is the field WordPress uses to define custom fields. To view or create these, edit any page and click the top-right (⋮) menu → Preferences → Panels → enable “Custom Fields”.</small></th>
-                <th>Shortcode<br><small>This is the shortcode name that will represent the field’s value. Use something like <code>price_box</code>.</small></th>
-                <th>Copy<br><small>Click to copy the shortcode. Use it anywhere across your site.</small></th>
-                <th>Value<br><small>This is the actual stored value for the field. You can override it here.</small></th>
-                <th>Delete<br><small>Permanently removes the field and its shortcode mapping.</small></th>
+                <th>Field Name<br><small>This is the field WordPress uses to define custom fields.</small></th>
+                <th>Shortcode<br><small>This is the shortcode which defines the “variable”.</small></th>
+                <th>Copy<br><small>Copy shortcode name to clipboard.</small></th>
+                <th>Value<br><small>The value of the custom field.</small></th>
+                <th>Delete<br><small>Remove field and mapping.</small></th>
             </tr>
         </thead><tbody>';
 
@@ -112,8 +112,12 @@ function ds_settings_page() {
             $copy_disabled = $shortcode ? '' : 'disabled style="opacity:0.5;"';
             $value_escaped = esc_attr($value);
             $shortcode_escaped = esc_attr($shortcode);
+            $is_user_defined = !in_array($field_name, [
+                'neve_meta_disable_title', 'neve_meta_container', 'neve_meta_sidebar', 'neve_meta_content_width'
+            ]);
+            $row_class = $is_user_defined ? 'ds-highlight-user' : '';
 
-            echo "<tr>
+            echo "<tr class='{$row_class}'>
                 <td><code>{$field_name}</code></td>
                 <td><input type='text' name='ds_shortcode_custom[{$field_name}]' value='{$shortcode_escaped}' /></td>
                 <td><button type='button' class='button copy-button' data-copy='{$copy_text}' {$copy_disabled}>Copy</button></td>
@@ -146,6 +150,14 @@ function ds_settings_page() {
     echo '</div>';
     ?>
     <script>
+        function dsFilterFields(query) {
+            const rows = document.querySelectorAll('#ds-field-table tbody tr');
+            query = query.toLowerCase();
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
         document.addEventListener('DOMContentLoaded', function () {
             const buttons = document.querySelectorAll('.copy-button');
             buttons.forEach(button => {
