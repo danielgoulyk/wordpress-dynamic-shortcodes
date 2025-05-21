@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Dynamic Shortcodes (No ACF Required)
  * Description: Dynamically register shortcodes from custom field values on a selected page. Fully standalone—no ACF needed.
- * Version: 2.4
+ * Version: 2.5
  * Author: Daniel Goulyk (danielgoulyk.com)
  */
 
@@ -25,10 +25,10 @@ function ds_save_field_values() {
         foreach ($_POST['ds_field_values'] as $field_key => $field_value) {
             update_post_meta($page_id, $field_key, sanitize_text_field($field_value));
         }
+    }
 
-        if (isset($_POST['ds_shortcode_custom'])) {
-            update_option('ds_shortcode_custom', array_map('sanitize_text_field', $_POST['ds_shortcode_custom']));
-        }
+    if (isset($_POST['ds_shortcode_custom'])) {
+        update_option('ds_shortcode_custom', array_map('sanitize_text_field', $_POST['ds_shortcode_custom']));
     }
 }
 add_action('admin_init', 'ds_save_field_values');
@@ -87,12 +87,11 @@ function ds_settings_page() {
             $fields[$key] = maybe_unserialize($values[0]);
         }
 
-        echo '<form method="post" id="ds-form">';
+        echo '<form method="post" action="">';
         settings_fields('ds_settings_group');
         echo '<input type="hidden" name="ds_page_id" value="' . esc_attr($selected_page) . '">';
         echo '<h2>Shortcode Mapping</h2>';
         echo '<p>This section displays all custom fields detected on the selected page. You can assign a shortcode to any of these fields and use it anywhere across your website.</p>';
-
         echo '<input type="text" class="ds-search-bar" placeholder="Search fields..." onkeyup="dsFilterFields(this.value)" />';
 
         echo '<table class="widefat" id="ds-field-table">';
@@ -112,10 +111,7 @@ function ds_settings_page() {
             $copy_disabled = $shortcode ? '' : 'disabled style="opacity:0.5;"';
             $value_escaped = esc_attr($value);
             $shortcode_escaped = esc_attr($shortcode);
-            $is_user_defined = !in_array($field_name, [
-                'neve_meta_disable_title', 'neve_meta_container', 'neve_meta_sidebar', 'neve_meta_content_width'
-            ]);
-            $row_class = $is_user_defined ? 'ds-highlight-user' : '';
+            $row_class = 'ds-highlight-user';
 
             echo "<tr class='{$row_class}'>
                 <td><code>{$field_name}</code></td>
@@ -135,8 +131,10 @@ function ds_settings_page() {
 
         echo '</tbody></table>';
         submit_button('Save Changes');
+        echo '</form>';
 
         echo '<hr><h2>Add a New Custom Field</h2>';
+        echo '<form method="post">';
         echo '<input type="hidden" name="ds_add_field_page_id" value="' . esc_attr($selected_page) . '">';
         echo '<table class="form-table">';
         echo '<tr><th>Field Name</th><td><input name="ds_new_field_key" type="text" required /></td></tr>';
