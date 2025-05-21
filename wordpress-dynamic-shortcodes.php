@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Dynamic Shortcodes (No ACF Required)
  * Description: Dynamically register shortcodes from custom field values on a selected page. Fully standalone—no ACF needed.
- * Version: 2.2
+ * Version: 2.3
  * Author: Daniel Goulyk (danielgoulyk.com)
  */
 
@@ -93,8 +93,18 @@ function ds_settings_page() {
         settings_fields('ds_settings_group');
         echo '<input type="hidden" name="ds_page_id" value="' . esc_attr($selected_page) . '">';
         echo '<h2>Shortcode Mapping</h2>';
+        echo '<p>This section displays all custom fields detected on the selected page. You can assign a shortcode to any of these fields and use it anywhere across your website.</p>';
+
         echo '<table class="widefat">';
-        echo '<thead><tr><th>Field Name</th><th>Shortcode</th><th>Copy</th><th>Value</th><th>Delete</th></tr></thead><tbody>';
+        echo '<thead>
+            <tr>
+                <th>Field Name<br><small>This is the field WordPress uses to define custom fields. To view or create these, edit any page and click the top-right (⋮) menu → Preferences → Panels → enable “Custom Fields”.</small></th>
+                <th>Shortcode<br><small>This is the shortcode name that will represent the field’s value. Use something like <code>price_box</code>.</small></th>
+                <th>Copy<br><small>Click to copy the shortcode. Use it anywhere across your site.</small></th>
+                <th>Value<br><small>This is the actual stored value for the field. You can override it here.</small></th>
+                <th>Delete<br><small>Permanently removes the field and its shortcode mapping.</small></th>
+            </tr>
+        </thead><tbody>';
 
         foreach ($fields as $field_name => $value) {
             $shortcode = $shortcode_map[$field_name] ?? '';
