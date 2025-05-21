@@ -1,11 +1,11 @@
-# Dynamic Shortcodes (No ACF Required)
+# Dynamic Values (No ACF Required)
 ## Create easy WordPress shortcodes without code — just set a value once, and it updates across your whole site automatically.
 
 **Contributors:** Daniel Goulyk (danielgoulyk.com)  
 **Tags:** shortcodes, custom fields, dynamic content, admin UI, WordPress plugin  
 **Requires at least:** 5.5  
 **Tested up to:** 6.8.1  
-**Stable tag:** 2.6  
+**Stable tag:** 2.6.1  
 **License:** GPLv2 or later  
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,17 @@ This plugin lets you:
 - Group system/meta fields separately from user-defined fields
 
 No ACF or technical knowledge required — built entirely on native WordPress functionality.
+
+---
+
+## Version 2.6.1 Changelog
+
+### Final Stable Release Improvements
+- Resolved bug where updating existing shortcode mappings was blocked
+- Polished admin UI and styling for a more refined experience
+- Fully standalone plugin menu renamed to **Dynamic Values**
+- All contextual guidance and help text finalized
+- Marked as stable production-ready version
 
 ---
 
