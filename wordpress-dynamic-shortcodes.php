@@ -103,7 +103,7 @@ function ds_settings_page() {
         echo '<table class="widefat" id="ds-table">';
         echo '<thead><tr>
                 <th>Field Name<br><small>This is the field WordPress uses to define custom fields.</small></th>
-                <th>Shortcode<br><small>This is the shortcode which defines the “variable”.</small></th>
+                <th>Shortcode<br><small>This is the shortcode which defines the "variable".</small></th>
                 <th>Copy<br><small>Copy shortcode name to clipboard.</small></th>
                 <th>Value<br><small>The value of the custom field.</small></th>
                 <th>Delete<br><small>Remove field and mapping.</small></th>
@@ -243,13 +243,21 @@ add_action('admin_post_ds_delete_field', function () {
 
 function ds_register_dynamic_shortcodes() {
     $page_id = get_option('ds_page_id');
-    $custom_map = get_option('ds_shortcode_custom');
+    $custom_map = get_option('ds_shortcode_custom', array());
 
-    if (!$page_id || !is_array($custom_map)) return;
+    if (!$page_id || !is_array($custom_map)) {
+        return;
+    }
 
     foreach ($custom_map as $field_name => $shortcode) {
+        if (empty($field_name) || empty($shortcode)) {
+            continue;
+        }
+
         $shortcode = trim($shortcode, '[] ');
-        if (!$shortcode) continue;
+        if (empty($shortcode)) {
+            continue;
+        }
 
         add_shortcode($shortcode, function () use ($field_name, $page_id) {
             $value = get_post_meta($page_id, $field_name, true);
